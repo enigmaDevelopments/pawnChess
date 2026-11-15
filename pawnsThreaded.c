@@ -175,9 +175,7 @@ struct AiOut Ai (struct Board b, int depth){
             boards[i] = boardsLong[i];
     }
 
-    bool done = false;
-
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(static,1)
     for (short i = 0; i < boardCount; i++){
         float newscore = -INFINITY;
         short moveType;
