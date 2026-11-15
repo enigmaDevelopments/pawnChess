@@ -14,7 +14,7 @@ struct Board{
     unsigned long long p1;
     unsigned long long p2;
 };
-struct aiOut
+struct AiOut
 {
     float score;
     unsigned short move;
@@ -150,7 +150,7 @@ float miniMax (struct Board b, float alpha, float beta, int depth, bool p1Turn){
     return score;
 }
 
-struct aiOut Ai (struct Board b, int depth){
+struct AiOut Ai (struct Board b, int depth){
     float score = -INFINITY;
     unsigned short bestMoves[64];
     int bestMoveCount = 0;
@@ -182,12 +182,12 @@ struct aiOut Ai (struct Board b, int depth){
                 newscore = miniMax(newBoard, -INFINITY, INFINITY, depth - 1, false);
             }
             if (newscore == INFINITY)
-                return (struct aiOut){newscore, __builtin_ctzll(j) * 3 + i};
+                return (struct AiOut){newscore, __builtin_ctzll(j) * 3 + i};
 
             if (score < newscore){
                 score = newscore;
-                bestMoveCount = 0;
-                bestMoves[bestMoveCount] = __builtin_ctzll(j) * 3 + i;
+                bestMoveCount = 1;
+                bestMoves[0] = __builtin_ctzll(j) * 3 + i;
             }
             else if (score == newscore)
                 bestMoves[bestMoveCount++] = __builtin_ctzll(j) * 3 + i;
@@ -195,7 +195,7 @@ struct aiOut Ai (struct Board b, int depth){
         }
     }
 
-    return (struct aiOut){score, bestMoves[rand() % bestMoveCount]};
+    return (struct AiOut){score, bestMoves[rand() % bestMoveCount]};
 }
 
 
@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
         return 1;
     int depth = atoi(argv[1]);
     struct Board b = {0x000000000000FFFF, 0xFFFF000000000000};
-    struct aiOut aiResult = Ai(b, depth);
+    struct AiOut aiResult = Ai(b, depth);
     printf("Score: %f\n", aiResult.score);
     printf("Move: %hu\n", aiResult.move);
 }
