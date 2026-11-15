@@ -64,26 +64,29 @@ float miniMax (struct Board b, float alpha, float beta, int depth, bool p1Turn){
         struct Moves m = getMovesP1(b);
         if (!(m.strightMoves | m.leftMoves | m.rightMoves))
             return 0;
-        for (unsigned long long i = 1, count = 0; count < 64; i <<= 1, count++){
-            for (int j = 0; j < 3; j ++){
+        for (short i = 0; i < 3; i++){
+            unsigned long long *move = (unsigned long long *)&m+i;
+            while (*move){
                 float newscore = -INFINITY;
-                if (j == 0 && m.strightMoves & i){
-                    unsigned long long newP1 = b.p1 | i;
-                    newP1 ^= i >> 8;
+                long long j = 1ULL << __builtin_ctzll(*move);
+                *move ^= j;
+                if (i == 0){
+                    unsigned long long newP1 = b.p1 | j;
+                    newP1 ^= j >> 8;
                     struct Board newBoard = {newP1, b.p2};
                     newscore = miniMax(newBoard, alpha, beta, depth - 1, false);
                 }
-                else if (j == 1 && m.leftMoves & i){
-                    unsigned long long newP1 = b.p1 | i;
-                    newP1 ^= i >> 9;
-                    unsigned long long newP2 = b.p2 ^ i;
+                else if (i == 1){
+                    unsigned long long newP1 = b.p1 | j;
+                    newP1 ^= j >> 9;
+                    unsigned long long newP2 = b.p2 ^ j;
                     struct Board newBoard = {newP1, newP2};
                     newscore = miniMax(newBoard, alpha, beta, depth - 1, false);
                 }
-                else if (j == 2 && m.rightMoves & i){
-                    unsigned long long newP1 = b.p1 | i;
-                    newP1 ^= i >> 7;
-                    unsigned long long newP2 = b.p2 ^ i;
+                else if (i == 2){
+                    unsigned long long newP1 = b.p1 | j;
+                    newP1 ^= j >> 7;
+                    unsigned long long newP2 = b.p2 ^ j;
                     struct Board newBoard = {newP1, newP2};
                     newscore = miniMax(newBoard, alpha, beta, depth - 1, false);
                 
@@ -107,26 +110,29 @@ float miniMax (struct Board b, float alpha, float beta, int depth, bool p1Turn){
         struct Moves m = getMovesP2(b);
         if (!(m.strightMoves | m.leftMoves | m.rightMoves))
             return 0;
-        for (unsigned long long i = 1, count = 0; count < 64; i <<= 1, count++){
-            for (int j = 0; j < 3; j ++){
+        for (int i = 0; i < 3; i++){
+            unsigned long long *move = (unsigned long long *)&m+i;
+            while (*move) {
                 float newscore = INFINITY;
-                if (j == 0 && m.strightMoves & i){
-                    unsigned long long newP2 = b.p2 | i;
-                    newP2 ^= i << 8;
+                long long j = 1ULL << __builtin_ctzll(*move);
+                *move ^= j;
+                if (i == 0){
+                    unsigned long long newP2 = b.p2 | j;
+                    newP2 ^= j << 8;
                     struct Board newBoard = {b.p1, newP2};
                     newscore = miniMax(newBoard, alpha, beta, depth - 1, true);
                 }
-                else if (j == 1 && m.leftMoves & i){
-                    unsigned long long newP2 = b.p2 | i;
-                    newP2 ^= i << 7;
-                    unsigned long long newP1 = b.p1 ^ i;
+                else if (i == 1){
+                    unsigned long long newP2 = b.p2 | j;
+                    newP2 ^= j << 7;
+                    unsigned long long newP1 = b.p1 ^ j;
                     struct Board newBoard = {newP1, newP2};
                     newscore = miniMax(newBoard, alpha, beta, depth - 1, true);
                 }
-                else if (j == 2 && m.rightMoves & i){
-                    unsigned long long newP2 = b.p2 | i;
-                    newP2 ^= i << 9;
-                    unsigned long long newP1 = b.p1 ^ i;
+                else if (i == 2){
+                    unsigned long long newP2 = b.p2 | j;
+                    newP2 ^= j << 9;
+                    unsigned long long newP1 = b.p1 ^ j;
                     struct Board newBoard = {newP1, newP2};
                     newscore = miniMax(newBoard, alpha, beta, depth - 1, true);
                 }
@@ -138,7 +144,7 @@ float miniMax (struct Board b, float alpha, float beta, int depth, bool p1Turn){
                             return score;
                     }
                 }
-            }   
+            }  
         }
     }
     return score;
@@ -149,39 +155,42 @@ struct aiOut Ai (struct Board b, int depth){
     unsigned short bestMoves[64];
     int bestMoveCount = 0;
     struct Moves m = getMovesP1(b);
-    for (unsigned long long i = 1, count = 0; count < 64; i <<= 1, count++){
-        for (int j = 0; j < 3; j++){
+    for (short i = 0; i < 3; i++){
+        unsigned long long *move = (unsigned long long *)&m+i;
+        while (*move) {
             float newscore = -INFINITY;
-            if (j == 0 && m.strightMoves & i){
-                unsigned long long newP1 = b.p1 | i;
-                newP1 ^= i >> 8;
+            long long j = 1ULL << __builtin_ctzll(*move);
+            *move ^= j;
+            if (i == 0){
+                unsigned long long newP1 = b.p1 | j;
+                newP1 ^= j >> 8;
                 struct Board newBoard = {newP1, b.p2};
                 newscore = miniMax(newBoard, -INFINITY, INFINITY, depth - 1, false);
             }
-            else if (j == 1 && m.leftMoves & i){
-                unsigned long long newP1 = b.p1 | i;
-                newP1 ^= i >> 9;
-                unsigned long long newP2 = b.p2 ^ i;
+            else if (i == 1){
+                unsigned long long newP1 = b.p1 | j;
+                newP1 ^= j >> 9;
+                unsigned long long newP2 = b.p2 ^ j;
                 struct Board newBoard = {newP1, newP2};
                 newscore = miniMax(newBoard, -INFINITY, INFINITY, depth - 1, false);
             }
-            else if (j == 2 && m.rightMoves & i){
-                unsigned long long newP1 = b.p1 | i;
-                newP1 ^= i >> 7;
-                unsigned long long newP2 = b.p2 ^ i;
+            else if (i == 2){
+                unsigned long long newP1 = b.p1 | j;
+                newP1 ^= j >> 7;
+                unsigned long long newP2 = b.p2 ^ j;
                 struct Board newBoard = {newP1, newP2};
                 newscore = miniMax(newBoard, -INFINITY, INFINITY, depth - 1, false);
             }
             if (newscore == INFINITY)
-                return (struct aiOut){newscore, count * 3 + j};
+                return (struct aiOut){newscore, __builtin_ctzll(j) * 3 + i};
 
             if (score < newscore){
                 score = newscore;
                 bestMoveCount = 0;
-                bestMoves[bestMoveCount] = count * 3 + j;
+                bestMoves[bestMoveCount] = __builtin_ctzll(j) * 3 + i;
             }
             else if (score == newscore)
-                bestMoves[bestMoveCount++] = count * 3 + j;
+                bestMoves[bestMoveCount++] = __builtin_ctzll(j) * 3 + i;
 
         }
     }
@@ -194,7 +203,7 @@ struct aiOut Ai (struct Board b, int depth){
 
 int main(int argc, char *argv[])
 {
-    if (argc < 1)
+    if (argc < 2)
         return 1;
     int depth = atoi(argv[1]);
     struct Board b = {0x000000000000FFFF, 0xFFFF000000000000};
