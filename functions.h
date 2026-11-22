@@ -54,7 +54,7 @@ static inline float getScoreHelper(struct Board b, unsigned long long mask, unsi
     }
     if (p2){
         p2Pos = 7 - (__builtin_ctzll(p2) / 8);
-        int add = weights[p2Pos] * __builtin_popcountll(p2) - __builtin_popcountll(p1Sides);
+        int add = weights[p2Pos] * (__builtin_popcountll(p2) - __builtin_popcountll(p1Sides));
         delta -= (0 < add) ? add : 0;
     }
     if (p1 && p2 && p1Pos < 7-p2Pos)
