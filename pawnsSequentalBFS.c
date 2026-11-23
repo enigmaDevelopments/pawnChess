@@ -1,4 +1,5 @@
 #include "functions.h"
+
 struct AiOut Ai (struct Board b, int depth){
     struct Board* boards = malloc(sizeof(struct Board));
     struct Moves* moves;
@@ -19,59 +20,27 @@ struct AiOut Ai (struct Board b, int depth){
         
         if (p1Turn){
             for (int i = 0; i < numBoards; i++){
-                moves[i] = getMovesP1(boards[i]);
-                if (boards[i].p1 & 0x00000000000000FF || !boards[i].p2) 
-                    scores[d][i] = INFINITY;
-                else if (!(moves[i].strightMoves | moves[i].leftMoves | moves[i].rightMoves))
-                    scores[d][i] = 0;
+                if (boards[i].p1 & 0x00000000000000FF || boards[i].p2 & 0x00000000000000FF || !boards[i].p1 || !boards[i].p2)
+                    moves[i] = (struct Moves) {0, 0, 0};
                 else
-                    scores[d][i] = -INFINITY;
-            }
-        }
-        else{
-            for (int i = 0; i < numBoards; i++){
-                moves[i] = getMovesP2(boards[i]);
-                if (boards[i].p2 & 0x00000000000000FF || !boards[i].p1) 
-                    scores[d][i] = -INFINITY;
-                else if (!(moves[i].strightMoves | moves[i].leftMoves | moves[i].rightMoves))
-                    scores[d][i] = 0;
-                else
-                    scores[d][i] = INFINITY;
-            }
-        }
-
-        {
-            bool localP1turn = !p1Turn;
-            for (int i = d-1; 0 <= i; i--){
-                for (int j = 0;  j < moveCountsCount[i]; j++){
-                    float localMinMax = scores[i][j];
-                    for (int k = moveCounts[i][j]; k < moveCounts[i][j+1]; k++){
-                        if (localP1turn && localMinMax < scores[i+1][k])
-                            localMinMax = scores[i+1][k];
-                        else if (!localP1turn && scores[i+1][k] < localMinMax)
-                            localMinMax = scores[i+1][k];
-                    }
-                    scores[i][j] = localMinMax;
-                    if ((localP1turn && localMinMax == INFINITY) || (!localP1turn && localMinMax == -INFINITY)){
-                        int left = moveCounts[i][j];
-                        int right = moveCounts[i][j];
-                        for (int k = 0; k< d; k++){
-                            left = moveCounts[k][left];
-                            right = moveCounts[k][right];
-                        }
-                        for (int k = left; k < right; k++)
-                            moves[k] = (struct Moves){0,0,0};
-                    }
-                }
-                localP1turn = !localP1turn;
-            }
-        }
-
-        for (int i = 0; i < numBoards; i++){
+                    moves[i] = getMovesP1(boards[i]);
             moveCounts[d][i+1] = __builtin_popcountll(moves[i].strightMoves) + __builtin_popcountll(moves[i].leftMoves) + __builtin_popcountll(moves[i].rightMoves);
             if (moveCounts[d][i+1] == 0)
                 moveCounts[d][i+1] = 1;
             moveCounts[d][i+1] += moveCounts[d][i];
+            }
+        }
+        else{
+            for (int i = 0; i < numBoards; i++){
+                if (boards[i].p1 & 0x00000000000000FF || boards[i].p2 & 0x00000000000000FF || !boards[i].p1 || !boards[i].p2)
+                    moves[i] = (struct Moves) {0, 0, 0};
+                else
+                    moves[i] = getMovesP2(boards[i]);
+            moveCounts[d][i+1] = __builtin_popcountll(moves[i].strightMoves) + __builtin_popcountll(moves[i].leftMoves) + __builtin_popcountll(moves[i].rightMoves);
+            if (moveCounts[d][i+1] == 0)
+                moveCounts[d][i+1] = 1;
+            moveCounts[d][i+1] += moveCounts[d][i];      
+            }
         }
 
         moveCountsCount[d+1] = moveCounts[d][numBoards];
@@ -80,7 +49,7 @@ struct AiOut Ai (struct Board b, int depth){
         if (p1Turn){
             for (int i = 0; i < numBoards; i++){
                 if (moves[i].leftMoves == 0 && moves[i].rightMoves == 0 && moves[i].strightMoves == 0){
-                    newBoards[moveCounts[d][i]] = (struct Board){0x10000000ULL,0x1000000000ULL};
+                    newBoards[moveCounts[d][i]] = boards[i];
                     continue;
                 }
                 int offset = 0;
@@ -109,14 +78,12 @@ struct AiOut Ai (struct Board b, int depth){
                         }
                     }
                 }
-                if (offset == 0 )
-                    newBoards[moveCounts[d][i]] = (struct Board) {0,0};
             }
         }
         else{
             for (int i = 0; i < numBoards; i++){
                 if (moves[i].leftMoves == 0 && moves[i].rightMoves == 0 && moves[i].strightMoves == 0){
-                    newBoards[moveCounts[d][i]] = (struct Board){0x10000000ULL,0x1000000000ULL};
+                    newBoards[moveCounts[d][i]] = boards[i];
                     continue;
                 }
                 int offset = 0;
@@ -154,13 +121,21 @@ struct AiOut Ai (struct Board b, int depth){
         free(boards);
         boards = newBoards;
     }
-    for (int i = 0; i < numBoards; i++)
-        scores[depth][i] = getScore(boards[i]);
+    scores[depth] = malloc(sizeof(float) * numBoards);
+    for (int i = 0; i < numBoards; i++){
+        if (b.p2 & 0x00000000000000FF || !b.p1)
+            scores[depth][i] = -INFINITY;
+        else if (b.p1 & 0xFF00000000000000 || !b.p2)
+            scores[depth][i] = INFINITY;
+        else
+            scores[depth][i] = getScore(boards[i]);
+    }
     
     for (int i = depth-1; 0 <= i; i--){
         p1Turn = !p1Turn;
         for (int j = 0;  j < moveCountsCount[i]; j++){
-            float localMinMax = scores[i][j];
+            float localMinMax = p1Turn? -INFINITY : INFINITY;
+
             for (int k = moveCounts[i][j]; k < moveCounts[i][j+1]; k++){
                 if (p1Turn && localMinMax < scores[i+1][k])
                     localMinMax = scores[i+1][k];
@@ -170,12 +145,12 @@ struct AiOut Ai (struct Board b, int depth){
             scores[i][j] = localMinMax;
         }
     }
-
     int* bestMoves = malloc(sizeof(int) * moveCountsCount[1]);
     int bestMoveCount = 0;
     for (int i = 0; i < moveCountsCount[1]; i++)
         if(scores[0][0] == scores[1][i])
            bestMoves[bestMoveCount++] = i;
+
     int chosen = bestMoves[rand() % bestMoveCount];
     struct Moves m = getMovesP1(b);
     for (short i = 0; i < 3; i++){

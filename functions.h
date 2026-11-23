@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <math.h>
+#include <float.h>
 
 
 static const float weights[] = {1,2,3,10,15,25,50};
