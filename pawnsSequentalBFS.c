@@ -130,7 +130,6 @@ struct AiOut Ai (struct Board b, int depth){
         else
             lastScores[i] = getScore(boards[i]);
     }
-    printf("test ");
     float* scores;
     for (int i = depth-1; 0 <= i; i--){
         p1Turn = !p1Turn;

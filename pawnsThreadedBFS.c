@@ -20,7 +20,7 @@ struct AiOut Ai (struct Board b, int depth){
             int prefix = 0;
             int count;
             if (p1Turn){
-                #pragma omp parallel for simd reduction(inscan, +:prefix) private(count)
+                #pragma omp parallel for simd reduction(inscan, +:prefix) private(count) if (numBoards != 1)
                 for (int i = 0; i < numBoards; i++){
                     if (boards[i].p1 & 0xFF00000000000000 || boards[i].p2 & 0x00000000000000FF || !boards[i].p1 || !boards[i].p2)
                         moves[i] = (struct Moves) {0, 0, 0};
@@ -35,7 +35,7 @@ struct AiOut Ai (struct Board b, int depth){
                 }
             }
             else{
-                #pragma omp parallel for simd reduction(inscan, +:prefix) private(count)
+                #pragma omp parallel for simd reduction(inscan, +:prefix) private(count) if (numBoards != 1)
                 for (int i = 0; i < numBoards; i++){
                     if (boards[i].p1 & 0xFF00000000000000 || boards[i].p2 & 0x00000000000000FF || !boards[i].p1 || !boards[i].p2)
                         moves[i] = (struct Moves) {0, 0, 0};
@@ -55,7 +55,7 @@ struct AiOut Ai (struct Board b, int depth){
         struct Board* newBoards = malloc(sizeof(struct Board) * moveCountsCount[d+1]);
 
         if (p1Turn){
-            #pragma omp parallel for
+            #pragma omp parallel for if (numBoards != 1)
             for (int i = 0; i < numBoards; i++){
                 if (moves[i].leftMoves == 0 && moves[i].rightMoves == 0 && moves[i].strightMoves == 0){
                     newBoards[moveCounts[d][i]] = boards[i];
@@ -91,7 +91,7 @@ struct AiOut Ai (struct Board b, int depth){
             }
         }
         else{
-            #pragma omp parallel for
+            #pragma omp parallel for if (numBoards != 1)
             for (int i = 0; i < numBoards; i++){
                 if (moves[i].leftMoves == 0 && moves[i].rightMoves == 0 && moves[i].strightMoves == 0){
                     newBoards[moveCounts[d][i]] = boards[i];
@@ -143,7 +143,6 @@ struct AiOut Ai (struct Board b, int depth){
         else
             lastScores[i] = getScore(boards[i]);
     }
-    printf("test ");
     float* scores;
     for (int i = depth-1; 0 <= i; i--){
         p1Turn = !p1Turn;
