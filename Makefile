@@ -16,5 +16,9 @@ bcs: EXTRA = pawnsSequentalBFS.c
 bcs: OUT = comp/bcs
 bcs: build
 
+bct: EXTRA = pawnsThreadedBFS.c
+bct: OUT = comp/bct
+bct: build
+
 build:
 	$(CC) $(FLAGS) $(HEADER) $(MAIN) $(EXTRA) -o $(OUT)
