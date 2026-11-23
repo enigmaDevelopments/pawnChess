@@ -6,7 +6,6 @@ struct AiOut Ai (struct Board b, int depth){
     int** moveCounts = malloc(sizeof(int*) * depth);
     moveCounts[0] = malloc(sizeof(int) * 2);
     int* moveCountsCount = malloc(sizeof(int) * (depth+1));
-    float** scores = malloc(sizeof(float*) * (depth+1));
     int numBoards = 1;
     boards[0] = b;
     moveCountsCount[0] = 1;
@@ -14,13 +13,12 @@ struct AiOut Ai (struct Board b, int depth){
 
     for (int d = 0; d < depth; d++){
         moves = (struct Moves*) malloc(sizeof(struct Moves) * numBoards);
-        scores[d] = malloc(sizeof(float) * numBoards);
         moveCounts[d] = malloc(sizeof(int) * (numBoards+1));
         moveCounts[d][0] = 0;
         
         if (p1Turn){
             for (int i = 0; i < numBoards; i++){
-                if (boards[i].p1 & 0x00000000000000FF || boards[i].p2 & 0x00000000000000FF || !boards[i].p1 || !boards[i].p2)
+                if (boards[i].p1 & 0xFF00000000000000 || boards[i].p2 & 0x00000000000000FF || !boards[i].p1 || !boards[i].p2)
                     moves[i] = (struct Moves) {0, 0, 0};
                 else
                     moves[i] = getMovesP1(boards[i]);
@@ -32,7 +30,7 @@ struct AiOut Ai (struct Board b, int depth){
         }
         else{
             for (int i = 0; i < numBoards; i++){
-                if (boards[i].p1 & 0x00000000000000FF || boards[i].p2 & 0x00000000000000FF || !boards[i].p1 || !boards[i].p2)
+                if (boards[i].p1 & 0xFF00000000000000 || boards[i].p2 & 0x00000000000000FF || !boards[i].p1 || !boards[i].p2)
                     moves[i] = (struct Moves) {0, 0, 0};
                 else
                     moves[i] = getMovesP2(boards[i]);
@@ -50,6 +48,7 @@ struct AiOut Ai (struct Board b, int depth){
             for (int i = 0; i < numBoards; i++){
                 if (moves[i].leftMoves == 0 && moves[i].rightMoves == 0 && moves[i].strightMoves == 0){
                     newBoards[moveCounts[d][i]] = boards[i];
+                    printf("%d\n",d);
                     continue;
                 }
                 int offset = 0;
@@ -84,6 +83,7 @@ struct AiOut Ai (struct Board b, int depth){
             for (int i = 0; i < numBoards; i++){
                 if (moves[i].leftMoves == 0 && moves[i].rightMoves == 0 && moves[i].strightMoves == 0){
                     newBoards[moveCounts[d][i]] = boards[i];
+                    printf("%d\n",d);
                     continue;
                 }
                 int offset = 0;
@@ -121,34 +121,39 @@ struct AiOut Ai (struct Board b, int depth){
         free(boards);
         boards = newBoards;
     }
-    scores[depth] = malloc(sizeof(float) * numBoards);
+    float* lastScores = malloc(sizeof(float) * numBoards);
     for (int i = 0; i < numBoards; i++){
-        if (b.p2 & 0x00000000000000FF || !b.p1)
-            scores[depth][i] = -INFINITY;
-        else if (b.p1 & 0xFF00000000000000 || !b.p2)
-            scores[depth][i] = INFINITY;
+        if (boards[i].p2 & 0x00000000000000FF || !boards[i].p1)
+            lastScores[i] = -INFINITY;
+        else if (boards[i].p1 & 0xFF00000000000000 || !boards[i].p2)
+            lastScores[i] = INFINITY;
         else
-            scores[depth][i] = getScore(boards[i]);
+            lastScores[i] = getScore(boards[i]);
     }
-    
+    printf("test ");
+    float* scores;
     for (int i = depth-1; 0 <= i; i--){
         p1Turn = !p1Turn;
+        scores = (float*) moveCounts[i];
         for (int j = 0;  j < moveCountsCount[i]; j++){
             float localMinMax = p1Turn? -INFINITY : INFINITY;
-
             for (int k = moveCounts[i][j]; k < moveCounts[i][j+1]; k++){
-                if (p1Turn && localMinMax < scores[i+1][k])
-                    localMinMax = scores[i+1][k];
-                else if (!p1Turn && scores[i+1][k] < localMinMax)
-                    localMinMax = scores[i+1][k];
+                if (p1Turn && localMinMax < lastScores[k])
+                    localMinMax = lastScores[k];
+                else if (!p1Turn && lastScores[k] < localMinMax)
+                    localMinMax = lastScores[k];
             }
-            scores[i][j] = localMinMax;
+            scores[j] = localMinMax;
+        }
+        if (i != 0){
+            free(lastScores);
+            lastScores = scores;
         }
     }
     int* bestMoves = malloc(sizeof(int) * moveCountsCount[1]);
     int bestMoveCount = 0;
     for (int i = 0; i < moveCountsCount[1]; i++)
-        if(scores[0][0] == scores[1][i])
+        if(scores[0] == lastScores[i])
            bestMoves[bestMoveCount++] = i;
 
     int chosen = bestMoves[rand() % bestMoveCount];
@@ -160,16 +165,13 @@ struct AiOut Ai (struct Board b, int depth){
             long long j = 1ULL << pos;
             *move ^= j;
             if (chosen-- == 0) {
-                struct AiOut out = {scores[0][0],pos * 3 + i};
+                struct AiOut out = {scores[0],pos * 3 + i};
                 free(boards);
                 free(moveCountsCount);
                 free(bestMoves);
-                for(int k = 0; k < depth; k++){
-                    free(moveCounts[k]);
-                    free(scores[k]);
-                }
-                free(moveCounts);
+                free(lastScores);
                 free(scores);
+                free(moveCounts);
                 return out;
             }
         }
