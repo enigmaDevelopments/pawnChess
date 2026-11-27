@@ -1,4 +1,5 @@
 #include "functions.h"
+#include "dfs.h"
 #include <omp.h>
 
 

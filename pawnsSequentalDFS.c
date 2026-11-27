@@ -1,4 +1,5 @@
 #include "functions.h"
+#include "dfs.h"
 
 
 struct AiOut Ai (struct Board b, int depth){

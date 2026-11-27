@@ -1,43 +1,51 @@
 #include "functions.h"
+#include "bfs.h"
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
-struct AiOut Ai (struct Board b, int depth){
-    struct Board* boards = malloc(sizeof(struct Board));
+
+void forwardPass(struct Board** boardsPtr,int** moveCounts,int* moveCountsCount,int numBoards,int depth, bool p1Turn){
+    struct Board* boards = *boardsPtr;
     struct Moves* moves;
-    int** moveCounts = malloc(sizeof(int*) * depth);
     moveCounts[0] = malloc(sizeof(int) * 2);
-    int* moveCountsCount = malloc(sizeof(int) * (depth+1));
-    int numBoards = 1;
-    boards[0] = b;
-    moveCountsCount[0] = 1;
-    bool p1Turn = true;
 
     for (int d = 0; d < depth; d++){
         moves = (struct Moves*) malloc(sizeof(struct Moves) * numBoards);
         moveCounts[d] = malloc(sizeof(int) * (numBoards+1));
-        moveCounts[d][0] = 0;
-        
-        if (p1Turn){
-            for (int i = 0; i < numBoards; i++){
-                if (boards[i].p1 & 0xFF00000000000000 || boards[i].p2 & 0x00000000000000FF || !boards[i].p1 || !boards[i].p2)
-                    moves[i] = (struct Moves) {0, 0, 0};
-                else
-                    moves[i] = getMovesP1(boards[i]);
-            moveCounts[d][i+1] = __builtin_popcountll(moves[i].strightMoves) + __builtin_popcountll(moves[i].leftMoves) + __builtin_popcountll(moves[i].rightMoves);
-            if (moveCounts[d][i+1] == 0)
-                moveCounts[d][i+1] = 1;
-            moveCounts[d][i+1] += moveCounts[d][i];
+        {
+            moveCounts[d][0] = 0;
+            int prefix = 0;
+            int count;
+            if (p1Turn){
+                #pragma omp parallel for simd reduction(inscan, +:prefix) private(count) if (numBoards != 1)
+                for (int i = 0; i < numBoards; i++){
+                    if (boards[i].p1 & 0xFF00000000000000 || boards[i].p2 & 0x00000000000000FF || !boards[i].p1 || !boards[i].p2)
+                        moves[i] = (struct Moves) {0, 0, 0};
+                    else
+                        moves[i] = getMovesP1(boards[i]);
+                    count = __builtin_popcountll(moves[i].strightMoves) + __builtin_popcountll(moves[i].leftMoves) + __builtin_popcountll(moves[i].rightMoves);
+                    if (count == 0)
+                        count = 1;
+                    prefix += count;
+                    #pragma omp scan inclusive(prefix)
+                    moveCounts[d][i+1] = prefix;
+                }
             }
-        }
-        else{
-            for (int i = 0; i < numBoards; i++){
-                if (boards[i].p1 & 0xFF00000000000000 || boards[i].p2 & 0x00000000000000FF || !boards[i].p1 || !boards[i].p2)
-                    moves[i] = (struct Moves) {0, 0, 0};
-                else
-                    moves[i] = getMovesP2(boards[i]);
-            moveCounts[d][i+1] = __builtin_popcountll(moves[i].strightMoves) + __builtin_popcountll(moves[i].leftMoves) + __builtin_popcountll(moves[i].rightMoves);
-            if (moveCounts[d][i+1] == 0)
-                moveCounts[d][i+1] = 1;
-            moveCounts[d][i+1] += moveCounts[d][i];      
+            else{
+                #pragma omp parallel for simd reduction(inscan, +:prefix) private(count) if (numBoards != 1)
+                for (int i = 0; i < numBoards; i++){
+                    if (boards[i].p1 & 0xFF00000000000000 || boards[i].p2 & 0x00000000000000FF || !boards[i].p1 || !boards[i].p2)
+                        moves[i] = (struct Moves) {0, 0, 0};
+                    else
+                        moves[i] = getMovesP2(boards[i]);
+                    count = __builtin_popcountll(moves[i].strightMoves) + __builtin_popcountll(moves[i].leftMoves) + __builtin_popcountll(moves[i].rightMoves);
+                    if (count == 0)
+                        count = 1;
+                    prefix += count;
+                    #pragma omp scan inclusive(prefix)
+                    moveCounts[d][i+1] = prefix;   
+                }
             }
         }
 
@@ -45,6 +53,7 @@ struct AiOut Ai (struct Board b, int depth){
         struct Board* newBoards = malloc(sizeof(struct Board) * moveCountsCount[d+1]);
 
         if (p1Turn){
+            #pragma omp parallel for if (numBoards != 1)
             for (int i = 0; i < numBoards; i++){
                 if (moves[i].leftMoves == 0 && moves[i].rightMoves == 0 && moves[i].strightMoves == 0){
                     newBoards[moveCounts[d][i]] = boards[i];
@@ -80,6 +89,7 @@ struct AiOut Ai (struct Board b, int depth){
             }
         }
         else{
+            #pragma omp parallel for if (numBoards != 1)
             for (int i = 0; i < numBoards; i++){
                 if (moves[i].leftMoves == 0 && moves[i].rightMoves == 0 && moves[i].strightMoves == 0){
                     newBoards[moveCounts[d][i]] = boards[i];
@@ -121,58 +131,5 @@ struct AiOut Ai (struct Board b, int depth){
         free(boards);
         boards = newBoards;
     }
-    float* lastScores = malloc(sizeof(float) * numBoards);
-    for (int i = 0; i < numBoards; i++){
-        if (boards[i].p2 & 0x00000000000000FF || !boards[i].p1)
-            lastScores[i] = -INFINITY;
-        else if (boards[i].p1 & 0xFF00000000000000 || !boards[i].p2)
-            lastScores[i] = INFINITY;
-        else
-            lastScores[i] = getScore(boards[i]);
-    }
-    float* scores;
-    for (int i = depth-1; 0 <= i; i--){
-        p1Turn = !p1Turn;
-        scores = (float*) moveCounts[i];
-        for (int j = 0;  j < moveCountsCount[i]; j++){
-            float localMinMax = p1Turn? -INFINITY : INFINITY;
-            for (int k = moveCounts[i][j]; k < moveCounts[i][j+1]; k++){
-                if (p1Turn && localMinMax < lastScores[k])
-                    localMinMax = lastScores[k];
-                else if (!p1Turn && lastScores[k] < localMinMax)
-                    localMinMax = lastScores[k];
-            }
-            scores[j] = localMinMax;
-        }
-        if (i != 0){
-            free(lastScores);
-            lastScores = scores;
-        }
-    }
-    int* bestMoves = malloc(sizeof(int) * moveCountsCount[1]);
-    int bestMoveCount = 0;
-    for (int i = 0; i < moveCountsCount[1]; i++)
-        if(scores[0] == lastScores[i])
-           bestMoves[bestMoveCount++] = i;
-
-    int chosen = bestMoves[rand() % bestMoveCount];
-    struct Moves m = getMovesP1(b);
-    for (short i = 0; i < 3; i++){
-        unsigned long long *move = (unsigned long long *)&m + i;
-        while (*move){
-            int pos = __builtin_ctzll(*move);
-            long long j = 1ULL << pos;
-            *move ^= j;
-            if (chosen-- == 0) {
-                struct AiOut out = {scores[0],pos * 3 + i};
-                free(boards);
-                free(moveCountsCount);
-                free(bestMoves);
-                free(lastScores);
-                free(scores);
-                free(moveCounts);
-                return out;
-            }
-        }
-    }
+    *boardsPtr = boards;
 }

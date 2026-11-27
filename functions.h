@@ -3,26 +3,13 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <math.h>
-#include <float.h>
+#include "structs.h"
 
 
 static const float weights[] = {1,2,3,10,15,25,50};
 
 
-struct Moves{
-    unsigned long long strightMoves;
-    unsigned long long leftMoves;
-    unsigned long long rightMoves;
-};
-struct Board{
-    unsigned long long p1;
-    unsigned long long p2;
-};
-struct AiOut
-{
-    float score;
-    unsigned short move;
-};
+
 
 static inline struct Moves getMovesP1(struct Board b){
     struct Moves m;
@@ -80,6 +67,6 @@ static inline float getScore(struct Board b){
         score += getScoreHelper(b, mask, mask2);
     return score;
 }
-float miniMax (struct Board b, float alpha, float beta, int depth, bool p1Turn);
+
 struct AiOut Ai (struct Board b, int depth);
 
