@@ -16,7 +16,7 @@ float backwardPass(float** scoresPtr, int** moveCounts, int* moveCountsCount, in
             scores = (float*) moveCounts[i];
         #endif
         if (p1Turn){
-            #pragma omp parallel for
+            #pragma omp parallel for if (3 < moveCountsCount[i])
             for (int j = 0;  j < moveCountsCount[i]; j++){
                 float localMax= -INFINITY;
                 #pragma omp simd reduction(max:localMax)
@@ -28,7 +28,7 @@ float backwardPass(float** scoresPtr, int** moveCounts, int* moveCountsCount, in
             }
         }
         else{
-            #pragma omp parallel for
+            #pragma omp parallel for if (3 < moveCountsCount[i])
             for (int j = 0;  j < moveCountsCount[i]; j++){
                 float localMin = INFINITY;
                 #pragma omp simd reduction(min:localMin)

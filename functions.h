@@ -67,6 +67,13 @@ static inline float getScore(struct Board b){
         score += getScoreHelper(b, mask, mask2);
     return score;
 }
+static inline bool p1Win(struct Board b){
+    return b.p1 & 0xFF00000000000000 || !b.p2;
+}
+static inline bool p2Win(struct Board b){
+    return b.p2 & 0x00000000000000FF || !b.p1;
+}
+
 
 struct AiOut Ai (struct Board b, int depth);
 

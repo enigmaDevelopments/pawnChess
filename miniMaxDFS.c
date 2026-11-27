@@ -5,7 +5,7 @@
 float miniMax (struct Board b, float alpha, float beta, int depth, bool p1Turn){
     float score;
     if (p1Turn) {
-        if (b.p2 & 0x00000000000000FF || !b.p1)
+        if (p2Win(b))
             return -INFINITY;
         if (depth == 0) 
             return getScore(b);
@@ -51,7 +51,7 @@ float miniMax (struct Board b, float alpha, float beta, int depth, bool p1Turn){
             }
         }
     } else {
-        if (b.p1 & 0xFF00000000000000 || !b.p2) 
+        if (p1Win(b)) 
             return INFINITY;
         if (depth == 0) 
             return getScore(b);

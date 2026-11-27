@@ -20,7 +20,7 @@ void forwardPass(struct Board** boardsPtr,int** moveCounts,int* moveCountsCount,
             if (p1Turn){
                 #pragma omp parallel for simd reduction(inscan, +:prefix) private(count) if (numBoards != 1)
                 for (int i = 0; i < numBoards; i++){
-                    if (boards[i].p1 & 0xFF00000000000000 || boards[i].p2 & 0x00000000000000FF || !boards[i].p1 || !boards[i].p2)
+                    if (p1Win(boards[i]) || p2Win(boards[i]))
                         moves[i] = (struct Moves) {0, 0, 1};
                     else
                         moves[i] = getMovesP1(boards[i]);
@@ -35,7 +35,7 @@ void forwardPass(struct Board** boardsPtr,int** moveCounts,int* moveCountsCount,
             else{
                 #pragma omp parallel for simd reduction(inscan, +:prefix) private(count) if (numBoards != 1)
                 for (int i = 0; i < numBoards; i++){
-                    if (boards[i].p1 & 0xFF00000000000000 || boards[i].p2 & 0x00000000000000FF || !boards[i].p1 || !boards[i].p2)
+                    if (p1Win(boards[i]) || p2Win(boards[i]))
                         moves[i] = (struct Moves) {0, 0, 0x8000000000000000ULL};
                     else
                         moves[i] = getMovesP2(boards[i]);
@@ -55,16 +55,18 @@ void forwardPass(struct Board** boardsPtr,int** moveCounts,int* moveCountsCount,
         if (p1Turn){
             #pragma omp parallel for if (numBoards != 1)
             for (int i = 0; i < numBoards; i++){
-                if (moves[i].leftMoves == 0 && moves[i].strightMoves == 0){
-                    if (moves[i].rightMoves == 0){
+                {
+                    unsigned long long con = moves[i].leftMoves | moves[i].strightMoves | moves[i].rightMoves;
+                    if (!con){
                         newBoards[moveCounts[d][i]] = (struct Board){0x10000000ULL,0x1000000000ULL};
                         continue;
                     }
-                    else if (moves[i].rightMoves == 1){
+                    else if (con== 1){
                         newBoards[moveCounts[d][i]] = boards[i];
                         continue;
                     }
                 }
+  
                 int offset = 0;
                 #pragma unroll
                 for (short j = 0; j < 3; j++){
@@ -96,12 +98,13 @@ void forwardPass(struct Board** boardsPtr,int** moveCounts,int* moveCountsCount,
         else{
             #pragma omp parallel for if (numBoards != 1)
             for (int i = 0; i < numBoards; i++){
-                if (moves[i].leftMoves == 0 && moves[i].strightMoves == 0){
-                    if (moves[i].rightMoves == 0){
+                {
+                    unsigned long long con = moves[i].leftMoves | moves[i].strightMoves | moves[i].rightMoves;
+                    if (!con){
                         newBoards[moveCounts[d][i]] = (struct Board){0x10000000ULL,0x1000000000ULL};
                         continue;
                     }
-                    else if (moves[i].rightMoves == 0x8000000000000000ULL){
+                    else if (con == 0x8000000000000000ULL){
                         newBoards[moveCounts[d][i]] = boards[i];
                         continue;
                     }
