@@ -4,17 +4,17 @@
 
 
 struct AiOut Ai (struct Board b, int depth){
-    float score = -INFINITY;
-    unsigned short bestMoves[64];
+    int16_t score = INT16_MIN;
+    uint_fast8_t bestMoves[64];
     int bestMoveCount = 0;
-    unsigned long long* boards;
+    uint64_t* boards;
     short boardCount = 0;
     short indexes[2] = {0,0}; 
     {
-        unsigned long long boardsLong[192];
+        uint64_t boardsLong[192];
         struct Moves m = getMovesP1(b);
         for (short i = 0; i< 3; i++){
-            unsigned long long *move = (unsigned long long*)&m+i;
+            uint64_t *move = (uint64_t*)&m+i;
             while (*move) {
                 boardsLong[boardCount] = 1ULL << __builtin_ctzll(*move);
                 *move ^= boardsLong[boardCount++];
@@ -22,37 +22,37 @@ struct AiOut Ai (struct Board b, int depth){
             if (i != 2)
                 indexes[i] = boardCount;
         }
-        boards = (unsigned long long*) malloc(boardCount * sizeof(unsigned long long));
+        boards = (uint64_t*) malloc(boardCount * sizeof(uint64_t));
         for (short i = 0; i < boardCount; i++)
             boards[i] = boardsLong[i];
     }
 
     #pragma omp parallel for schedule(static,1)
     for (short i = 0; i < boardCount; i++){
-        float newscore = -INFINITY;
+        int16_t newscore = INT16_MIN;
         short moveType;
         if (i < indexes[0]){
             moveType = 0;
-            unsigned long long newP1 = b.p1 | boards[i];
+            uint64_t newP1 = b.p1 | boards[i];
             newP1 ^= boards[i] >> 8;
             struct Board newBoard = {newP1, b.p2};
-            newscore = miniMax(newBoard, -INFINITY, INFINITY, depth - 1, false);
+            newscore = miniMax(newBoard, INT16_MIN, INT16_MAX, depth - 1, false);
         }
         else if (i < indexes[1]){
             moveType = 1;
-            unsigned long long newP1 = b.p1 | boards[i];
+            uint64_t newP1 = b.p1 | boards[i];
             newP1 ^= boards[i] >> 9;
-            unsigned long long newP2 = b.p2 ^ boards[i];
+            uint64_t newP2 = b.p2 ^ boards[i];
             struct Board newBoard = {newP1, newP2};
-            newscore = miniMax(newBoard, -INFINITY, INFINITY, depth - 1, false);
+            newscore = miniMax(newBoard, INT16_MIN, INT16_MAX, depth - 1, false);
         }
         else {
             moveType = 2;
-            unsigned long long newP1 = b.p1 | boards[i];
+            uint64_t newP1 = b.p1 | boards[i];
             newP1 ^= boards[i] >> 7;
-            unsigned long long newP2 = b.p2 ^ boards[i];
+            uint64_t newP2 = b.p2 ^ boards[i];
             struct Board newBoard = {newP1, newP2};
-            newscore = miniMax(newBoard, -INFINITY, INFINITY, depth - 1, false);
+            newscore = miniMax(newBoard, INT16_MIN, INT16_MAX, depth - 1, false);
         }
         
         #pragma omp critical

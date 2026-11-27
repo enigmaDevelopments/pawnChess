@@ -7,6 +7,6 @@ int main(int argc, char *argv[])
     int depth = atoi(argv[1]);
     struct Board b = {0x000000000000FFFF, 0xFFFF000000000000};
     struct AiOut aiResult = Ai(b, depth);
-    printf("Score: %f\n", aiResult.score);
-    printf("Move: %hu\n", aiResult.move);
+    printf("Score: %hu\n", aiResult.score);
+    printf("Move: %hhu\n", aiResult.move);
 }

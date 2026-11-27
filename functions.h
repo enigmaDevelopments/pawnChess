@@ -1,14 +1,10 @@
-#include <stdint.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <math.h>
 #include "structs.h"
 
 
-static const float weights[] = {1,2,3,10,15,25,50};
-
-
+static const int16_t weights[] = {1,2,3,10,15,25,50};
 
 
 static inline struct Moves getMovesP1(struct Board b){
@@ -25,14 +21,14 @@ static inline struct Moves getMovesP2(struct Board b){
     m.rightMoves = (b.p2 >> 9) & b.p1 & ~b.p2 & 0x7F7F7F7F7F7F7F7F;
     return m;
 }
-static inline float getScoreHelper(struct Board b, unsigned long long mask, unsigned long long mask2){
-    float delta = 0;
-    unsigned long long p1 = b.p1 & mask;
-    unsigned long long p2 = b.p2 & mask;
+static inline int16_t getScoreHelper(struct Board b, uint64_t mask, uint64_t mask2){
+    int16_t delta = 0;
+    uint64_t p1 = b.p1 & mask;
+    uint64_t p2 = b.p2 & mask;
     if (!p1 && !p2)
         return 0;
-    unsigned long long p1Sides = b.p1 & mask2;
-    unsigned long long p2Sides = b.p2 & mask2;
+    uint64_t p1Sides = b.p1 & mask2;
+    uint64_t p2Sides = b.p2 & mask2;
     int p1Pos = -1;
     int p2Pos = -1;
     if (p1){
@@ -49,16 +45,16 @@ static inline float getScoreHelper(struct Board b, unsigned long long mask, unsi
         delta += weights[p2Pos] - weights[p1Pos];
     return delta;
 }
-static inline float getScore(struct Board b){
-    float score = 0;
-    unsigned long long mask = 0x00000000000000FF;
+static inline int16_t getScore(struct Board b){
+    int16_t score = 0;
+    uint64_t mask = 0x00000000000000FF;
     #pragma unroll
     for (int i = 0; i < 7; i++, mask <<= 8){
         score += weights[i] * __builtin_popcountll(b.p1 & mask);
         score -= weights[6-i] * __builtin_popcountll(b.p2 & mask);
     }
     mask = 0x0101010101010101;
-    unsigned long long mask2 = 0x0202020202020202;
+    uint64_t mask2 = 0x0202020202020202;
     score += getScoreHelper(b, mask, mask2);
     mask2 = 0x0505050505050505;
     mask <<= 1;

@@ -9,8 +9,8 @@ struct AiOut Ai (struct Board b, int depth){
     moveCountsCount[0] = 1;
     forwardPass(&boards, moveCounts, moveCountsCount, 1,  depth, true);
 
-    float* scores = scorePass(boards, moveCountsCount[depth]);
-    float bestScore = backwardPass(&scores, moveCounts, moveCountsCount, depth, !((depth) & 1));
+    int16_t* scores = scorePass(boards, moveCountsCount[depth]);
+    int16_t bestScore = backwardPass(&scores, moveCounts, moveCountsCount, depth, !((depth) & 1));
 
     int* bestMoves = malloc(sizeof(int) * moveCountsCount[1]);
     int bestMoveCount = 0;
@@ -21,7 +21,7 @@ struct AiOut Ai (struct Board b, int depth){
     int chosen = bestMoves[rand() % bestMoveCount];
     struct Moves m = getMovesP1(b);
     for (short i = 0; i < 3; i++){
-        unsigned long long *move = (unsigned long long *)&m + i;
+        uint64_t *move = (uint64_t *)&m + i;
         while (*move){
             int pos = __builtin_ctzll(*move);
             long long j = 1ULL << pos;

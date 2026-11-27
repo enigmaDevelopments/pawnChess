@@ -1,18 +1,20 @@
 #ifndef STRUCTS
 #define STRUCTS
+#include <stdint.h>
+#include <stdbool.h>
 struct Moves{
-    unsigned long long strightMoves;
-    unsigned long long leftMoves;
-    unsigned long long rightMoves;
+    uint64_t strightMoves;
+    uint64_t leftMoves;
+    uint64_t rightMoves;
 };
 struct Board{
-    unsigned long long p1;
-    unsigned long long p2;
+    uint64_t p1;
+    uint64_t p2;
 };
 struct AiOut
 {
-    float score;
-    unsigned short move;
+    uint_fast8_t score;
+    int8_t move;
 };
 
 #endif

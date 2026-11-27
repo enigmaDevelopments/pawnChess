@@ -4,14 +4,14 @@
 #include <omp.h>
 #endif
 
-float* scorePass(struct Board* boards, int numBoards){
-    float* scores = malloc(sizeof(float) * numBoards);
+int16_t* scorePass(struct Board* boards, int numBoards){
+    int16_t* scores = malloc(sizeof(int16_t) * numBoards);
     #pragma omp parallel for simd
     for (int i = 0; i < numBoards; i++){
         if (p2Win(boards[i]))
-            scores[i] = -INFINITY;
+            scores[i] = INT16_MIN;
         else if (p1Win(boards[i]))
-            scores[i] = INFINITY;
+            scores[i] = INT16_MAX;
         else
             scores[i] = getScore(boards[i]);
     }

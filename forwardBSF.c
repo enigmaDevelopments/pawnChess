@@ -56,7 +56,7 @@ void forwardPass(struct Board** boardsPtr,int** moveCounts,int* moveCountsCount,
             #pragma omp parallel for if (numBoards != 1)
             for (int i = 0; i < numBoards; i++){
                 {
-                    unsigned long long con = moves[i].leftMoves | moves[i].strightMoves | moves[i].rightMoves;
+                    uint64_t con = moves[i].leftMoves | moves[i].strightMoves | moves[i].rightMoves;
                     if (!con){
                         newBoards[moveCounts[d][i]] = (struct Board){0x10000000ULL,0x1000000000ULL};
                         continue;
@@ -70,25 +70,25 @@ void forwardPass(struct Board** boardsPtr,int** moveCounts,int* moveCountsCount,
                 int offset = 0;
                 #pragma unroll
                 for (short j = 0; j < 3; j++){
-                    unsigned long long *move = (unsigned long long *)&moves[i] + j;
+                    uint64_t *move = (uint64_t *)&moves[i] + j;
                     while (*move){
                         long long k = 1ULL << __builtin_ctzll(*move);
                         *move ^= k;
                         if (j == 0){
-                            unsigned long long newP1 = boards[i].p1 | k;
+                            uint64_t newP1 = boards[i].p1 | k;
                             newP1 ^= k >> 8;
                             newBoards[moveCounts[d][i] + offset++] = (struct Board){newP1, boards[i].p2};
                         }
                         else if (j == 1){
-                            unsigned long long newP1 = boards[i].p1 | k;
+                            uint64_t newP1 = boards[i].p1 | k;
                             newP1 ^= k >> 9;
-                            unsigned long long newP2 = boards[i].p2 ^ k;
+                            uint64_t newP2 = boards[i].p2 ^ k;
                             newBoards[moveCounts[d][i] + offset++] = (struct Board){newP1, newP2};
                         }
                         else if (j == 2){
-                            unsigned long long newP1 = boards[i].p1 | k;
+                            uint64_t newP1 = boards[i].p1 | k;
                             newP1 ^= k >> 7;
-                            unsigned long long newP2 = boards[i].p2 ^ k;
+                            uint64_t newP2 = boards[i].p2 ^ k;
                             newBoards[moveCounts[d][i] + offset++] = (struct Board){newP1, newP2};
                         }
                     }
@@ -99,7 +99,7 @@ void forwardPass(struct Board** boardsPtr,int** moveCounts,int* moveCountsCount,
             #pragma omp parallel for if (numBoards != 1)
             for (int i = 0; i < numBoards; i++){
                 {
-                    unsigned long long con = moves[i].leftMoves | moves[i].strightMoves | moves[i].rightMoves;
+                    uint64_t con = moves[i].leftMoves | moves[i].strightMoves | moves[i].rightMoves;
                     if (!con){
                         newBoards[moveCounts[d][i]] = (struct Board){0x10000000ULL,0x1000000000ULL};
                         continue;
@@ -112,25 +112,25 @@ void forwardPass(struct Board** boardsPtr,int** moveCounts,int* moveCountsCount,
                 int offset = 0;
                 #pragma unroll
                 for (short j = 0; j < 3; j++){
-                    unsigned long long *move = (unsigned long long *)&moves[i] + j;
+                    uint64_t *move = (uint64_t *)&moves[i] + j;
                     while (*move){
                         long long k = 1ULL << __builtin_ctzll(*move);
                         *move ^= k;
                         if (j == 0){
-                            unsigned long long newP2 = boards[i].p2 | k;
+                            uint64_t newP2 = boards[i].p2 | k;
                             newP2 ^= k << 8;
                             newBoards[moveCounts[d][i]+ offset++] = (struct Board){boards[i].p1, newP2};
                         }
                         else if (j == 1){
-                            unsigned long long newP2 = boards[i].p2 | k;
+                            uint64_t newP2 = boards[i].p2 | k;
                             newP2 ^= k << 7;
-                            unsigned long long newP1 = boards[i].p1 ^ k;
+                            uint64_t newP1 = boards[i].p1 ^ k;
                             newBoards[moveCounts[d][i]+ offset++] = (struct Board){newP1, newP2};
                         }
                         else if (j == 2){
-                            unsigned long long newP2 = boards[i].p2 | k;
+                            uint64_t newP2 = boards[i].p2 | k;
                             newP2 ^= k << 9;
-                            unsigned long long newP1 = boards[i].p1 ^ k;
+                            uint64_t newP1 = boards[i].p1 ^ k;
                             newBoards[moveCounts[d][i]+ offset++] = (struct Board){newP1, newP2};
                         }
                     }
