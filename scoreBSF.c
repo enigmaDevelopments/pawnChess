@@ -6,7 +6,7 @@
 
 int16_t* scorePass(struct Board* boards, int numBoards){
     int16_t* scores = malloc(sizeof(int16_t) * numBoards);
-    #pragma omp parallel for simd
+    #pragma omp parallel for simd schedule(static)
     for (int i = 0; i < numBoards; i++){
         if (p2Win(boards[i]))
             scores[i] = INT16_MIN;

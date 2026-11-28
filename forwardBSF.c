@@ -51,9 +51,14 @@ void forwardPass(struct Board** boardsPtr,int** moveCounts,int* moveCountsCount,
 
         moveCountsCount[d+1] = moveCounts[d][numBoards];
         struct Board* newBoards = malloc(sizeof(struct Board) * moveCountsCount[d+1]);
-
+        #ifdef _OPENMP
+            if (numBoards < 1024 * (omp_get_num_threads()+2))
+                omp_set_schedule(omp_sched_static, 0);
+            else
+               omp_set_schedule(omp_sched_dynamic, 1024);
+        #endif
         if (p1Turn){
-            #pragma omp parallel for if (numBoards != 1)
+            #pragma omp parallel for if (numBoards != 1) schedule(runtime)
             for (int i = 0; i < numBoards; i++){
                 {
                     uint64_t con = moves[i].leftMoves | moves[i].strightMoves | moves[i].rightMoves;
@@ -96,7 +101,7 @@ void forwardPass(struct Board** boardsPtr,int** moveCounts,int* moveCountsCount,
             }
         }
         else{
-            #pragma omp parallel for if (numBoards != 1)
+            #pragma omp parallel for if (numBoards != 1) schedule(runtime)
             for (int i = 0; i < numBoards; i++){
                 {
                     uint64_t con = moves[i].leftMoves | moves[i].strightMoves | moves[i].rightMoves;

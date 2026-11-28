@@ -12,11 +12,16 @@ int16_t backwardPass(int16_t** scoresPtr, int** moveCounts, int* moveCountsCount
         p1Turn = !p1Turn;
         #ifdef _OPENMP
             scores = malloc(sizeof(int16_t) * moveCountsCount[i]);
+            if (moveCountsCount[i] <= omp_get_num_threads())
+                omp_set_schedule(omp_sched_static, 1);
+            else
+                omp_set_schedule(omp_sched_guided, 0);
+
         #else
             scores = (int16_t*) moveCounts[i];
         #endif
         if (p1Turn){
-            #pragma omp parallel for if (3 < moveCountsCount[i])
+            #pragma omp parallel for if (moveCountsCount[i] != 1) schedule(runtime)
             for (int j = 0;  j < moveCountsCount[i]; j++){
                 int16_t localMax= INT16_MIN;
                 #pragma omp simd reduction(max:localMax)
@@ -28,7 +33,7 @@ int16_t backwardPass(int16_t** scoresPtr, int** moveCounts, int* moveCountsCount
             }
         }
         else{
-            #pragma omp parallel for if (3 < moveCountsCount[i])
+            #pragma omp parallel for if (moveCountsCount[i] != 1) schedule(runtime)
             for (int j = 0;  j < moveCountsCount[i]; j++){
                 int16_t localMin = INT16_MAX;
                 #pragma omp simd reduction(min:localMin)
